@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ออมเงินกาแลคซี่ | Galaxy Saver</title>
+<style>
+:root{--bg:#0b0f1a;--card:#12182a;--ink:#e6ebff;--sub:#9ab;--acc:#7aa7ff;--ok:#39d98a;--warn:#ffc857}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:radial-gradient(1200px 600px at 20% -10%,#1b2350 0,#0b0f1a 50%,#070b12 100%);color:var(--ink);font:14px/1.4 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+h1{font-size:20px;margin:12px 0 8px}
+small{color:var(--sub)}
+.wrap{max-width:980px;margin:0 auto;padding:16px}
+.card{background:linear-gradient(180deg,#141b31,#101628);border:1px solid #1f2a48;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.35);padding:14px;margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.grid>div{display:flex;flex-direction:column}
+label{font-weight:600;margin:0 0 6px;color:#cfe1ff}
+input,select,button{border:1px solid #233055;background:#0f1530;color:var(--ink);padding:9px 10px;border-radius:10px;outline:none}
+input[type="date"]{padding:8px 10px}
+button{cursor:pointer;transition:.15s;border-color:#30427a}
+button:hover{transform:translateY(-1px)}
+button.primary{background:linear-gradient(180deg,#3757ff,#2747df)}
+button.ghost{background:#12182a}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.kpi{background:#0f1530;border:1px solid #233055;border-radius:12px;padding:10px}
+.kpi b{display:block;font-size:18px;margin-top:6px}
+table{width:100%;border-collapse:collapse}
+th,td{border-bottom:1px solid #1f2a48;padding:8px 6px;text-align:right}
+th:first-child,td:first-child{text-align:left}
+tr.done{background:rgba(57,217,138,.08)}
+.progress{height:10px;background:#0f1530;border-radius:20px;overflow:hidden;border:1px solid #233055}
+.bar{height:100%;background:linear-gradient(90deg,#39d98a,#7aa7ff)}
+.badge{font:600 12px ui-sans-serif;padding:4px 8px;border-radius:20px;border:1px solid #233055;background:#0f1530;color:#cfe1ff}
+canvas{width:100%;height:180px;background:#0f1530;border:1px solid #233055;border-radius:12px}
+hr{border:0;border-top:1px solid #1f2a48;margin:12px 0}
+@media (max-width:900px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🌌 ออมเงินกาแลคซี่ <small>วางแผนออม 1–365 วัน • ง่าย/กลาง/ยาก • ข้ามเสาร์อาทิตย์ • เช็กลิสต์รายวัน • CSV/JSON</small></h1>
+
+  <div class="card">
+    <div class="grid">
+      <div><label>ชื่อเป้าหมาย</label><input id="goalName" placeholder="เช่น คอร์สสัก, iPad ใหม่"></div>
+      <div><label>ยอดเป้าหมาย (฿)</label><input id="goalTotal" type="number" min="1" step="1" placeholder="เช่น 10000"></div>
+      <div><label>เริ่มวันที่</label><input id="startDate" type="date"></div>
+      <div><label>จำนวนวัน</label>
+        <div style="display:flex;gap:6px">
+          <input id="days" type="number" min="1" max="365" value="30">
+          <div class="btns" style="gap:4px">
+            <button class="badge" data-d="30">30</button>
+            <button class="badge" data-d="60">60</button>
+            <button class="badge" data-d="90">90</button>
+            <button class="badge" data-d="180">180</button>
+            <button class="badge" data-d="365">365</button>
+          </div>
+        </div>
+      </div>
+      <div><label>สไตล์การออม</label>
+        <select id="mode">
+          <option value="easy">ง่าย (เบา→หนัก)</option>
+          <option value="flat" selected>กลาง (คงที่)</option>
+          <option value="hard">ยาก (หนัก→เบา)</option>
+        </select>
+      </div>
+      <div><label>ความเร็ว (ชัน/ลาด)</label>
+        <input id="speed" type="range" min="0.5" max="1.5" step="0.01" value="1">
+        <small id="speedVal">1.00x</small>
+      </div>
+      <div><label>ข้ามวัน</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label><input id="skipSat" type="checkbox"> เสาร์</label>
+          <label><input id="skipSun" type="checkbox" checked> อาทิตย์</label>
+        </div>
+      </div>
+      <div><label>การปัดเศษ</label>
+        <select id="rounding">
+          <option value="1">บาท (แนะนำ)</option>
+          <option value="10">10 บาท</option>
+          <option value="100">100 บาท</option>
+        </select>
+      </div>
+    </div>
+    <div class="btns" style="margin-top:10px">
+      <button id="calc" class="primary">คำนวณแผนออม</button>
+      <button id="jumpToday" class="ghost">ไป “วันนี้”</button>
+      <button id="save" class="ghost">บันทึกแผน</button>
+      <select id="plans"></select>
+      <button id="load" class="ghost">โหลด</button>
+      <button id="del" class="ghost">ลบ</button>
+      <button id="csv" class="ghost">ดาวน์โหลด CSV</button>
+      <button id="exp" class="ghost">ส่งออก JSON</button>
+      <label class="badge"><input id="imp" type="file" accept=".json" style="display:none"> นำเข้า JSON</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="kpis">
+      <div class="kpi">ยอดเป้าหมาย<b id="kGoal">-</b></div>
+      <div class="kpi">สะสมตามแผน<b id="kPlan">-</b></div>
+      <div class="kpi">ทำจริง<b id="kReal">-</b></div>
+      <div class="kpi">เหลืออีก<b id="kLeft">-</b></div>
+      <div class="kpi">ความคืบหน้า
+        <div class="progress" style="margin-top:8px"><div id="bar" class="bar" style="width:0%"></div></div>
+        <b id="kPct">0%</b>
+      </div>
+    </div>
+    <hr>
+    <div class="kpis">
+      <div class="kpi">สรุปรายสัปดาห์นี้<b id="kWeek">-</b></div>
+      <div class="kpi">สรุปรายเดือนนี้<b id="kMonth">-</b></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <canvas id="chart" width="900" height="220" aria-label="Progress chart"></canvas>
+  </div>
+
+  <div class="card" id="tableWrap">
+    <table id="tbl">
+      <thead>
+        <tr><th>#</th><th>วันที่</th><th>ยอดตามแผน (฿)</th><th>สะสมแผน</th><th>ทำจริง</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <p style="color:#789"><small>เคล็ดลับ: เปลี่ยน “สไตล์ + ความเร็ว” เพื่อให้ยอดรายวันเหมาะกับรายรับในชีวิตจริง • กด “วันนี้” เพื่อเลื่อนไปแถวปัจจุบัน • บันทึกหลายแผนได้ในเครื่อง</small></p>
+</div>
+
+<script>
+// ===== Utils =====
+const $=q=>document.querySelector(q);
+const $$=q=>document.querySelectorAll(q);
+const pad=n=>String(n).padStart(2,'0');
+const fmt= (n)=> (n||0).toLocaleString('th-TH',{maximumFractionDigits:0});
+const todayStr=()=>{let d=new Date();d.setHours(0,0,0,0);return d.toISOString().slice(0,10)};
+const addDays=(d,dx)=>{let r=new Date(d);r.setDate(r.getDate()+dx);r.setHours(0,0,0,0);return r};
+const ymd=(d)=> d.toISOString().slice(0,10);
+function daterange(start, days, skipSat, skipSun){
+  let out=[], i=0, d=new Date(start);
+  while(out.length<days){
+    let wd=d.getDay();
+    if(!(skipSat&&wd==6) && !(skipSun&&wd==0)) out.push(new Date(d));
+    d.setDate(d.getDate()+1);
+    if(++i>2000)break;
+  }
+  return out;
+}
+function distribute(total, n, mode, speed, rounding){
+  // Build raw weights
+  let w=[], s=0;
+  for(let i=0;i<n;i++){
+    let t=i/(n-1||1);
+    let base=1;
+    if(mode==='easy') base= 0.7 + (t**(1*speed))*0.9;       // grow
+    else if(mode==='hard') base= 1.6 - (t**(1*speed))*0.9;  // decay
+    else base=1; // flat
+    w.push(base); s+=base;
+  }
+  let plan=w.map(x=> total*(x/s));
+  // rounding to step
+  let step=+rounding||1;
+  let r=plan.map(x=> Math.round(x/step)*step);
+  // fix sum via largest residuals
+  let diff= total - r.reduce((a,b)=>a+b,0);
+  let res= plan.map((x,i)=>({i,frac:x - r[i]})).sort((a,b)=>Math.abs(b.frac)-Math.abs(a.frac));
+  let sign= diff>0? 1 : -1;
+  for(let k=0;k<Math.abs(diff)/step;k++){ let o=res[k%res.length]; r[o.i]+= sign*step; }
+  return r;
+}
+function download(name, text, type='text/plain'){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type}));
+  a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),500);
+}
+function loadPlans(){ return JSON.parse(localStorage.getItem('gs_plans')||'[]'); }
+function savePlans(arr){ localStorage.setItem('gs_plans', JSON.stringify(arr)); syncPlanList(); }
+
+// ===== State =====
+let state={rows:[], meta:{}, progress:{}};
+
+// ===== UI init =====
+(function init(){
+  $('#startDate').value = todayStr();
+  $('#plans').innerHTML='<option value="">— เลือกแผนที่บันทึก —</option>';
+  syncPlanList();
+  $('#speed').addEventListener('input',e=>$('#speedVal').textContent= (+e.target.value).toFixed(2)+'x');
+  $$('.badge[data-d]').forEach(b=> b.onclick=()=>{$('#days').value=b.dataset.d});
+  $('#calc').onclick=buildPlan;
+  $('#csv').onclick=exportCSV;
+  $('#exp').onclick=exportJSON;
+  $('#imp').onchange=importJSON;
+  $('#save').onclick=savePlanCurrent;
+  $('#load').onclick=loadSelected;
+  $('#del').onclick=delSelected;
+  $('#jumpToday').onclick=jumpToday;
+  // Restore last plan if exists
+  let plans=loadPlans(); if(plans[0]){ applyPlan(plans[0]); }
+})();
+
+function syncPlanList(){
+  const plans=loadPlans();
+  const sel=$('#plans');
+  let cur=sel.value;
+  sel.innerHTML='<option value="">— เลือกแผนที่บันทึก —</option>'+
+    plans.map(p=>`<option value="${p.id}">${p.meta.name} • ฿${fmt(p.meta.total)} • ${p.rows.length} วัน</option>`).join('');
+  if(cur) sel.value=cur;
+}
+
+// ===== Core build =====
+function buildPlan(){
+  const name=$('#goalName').value.trim()||'เป้าหมายใหม่';
+  const total= Math.max(1, +$('#goalTotal').value||0);
+  const start=$('#startDate').value||todayStr();
+  const days= Math.min(365, Math.max(1, +$('#days').value||30));
+  const mode=$('#mode').value; const speed= +$('#speed').value;
+  const skipSat=$('#skipSat').checked, skipSun=$('#skipSun').checked;
+  const rounding=$('#rounding').value;
+  const dates= daterange(start, days, skipSat, skipSun);
+  const plan= distribute(total, dates.length, mode, speed, rounding);
+  // Compose rows
+  let rows=[], cum=0;
+  for(let i=0;i<dates.length;i++){
+    cum+=plan[i];
+    rows.push({i:i+1, date:ymd(dates[i]), plan:plan[i], cum:cum, done:false});
+  }
+  state={
+    rows,
+    meta:{name,total,start,days:dates.length,mode,speed,skipSat,skipSun,rounding,created:Date.now()},
+    progress:{}
+  };
+  render();
+}
+
+function render(){
+  // Fill table
+  const tb=$('#tbl tbody'); tb.innerHTML='';
+  const today=todayStr();
+  let cumReal=0;
+  state.rows.forEach((r,idx)=>{
+    const key=r.date;
+    const done= !!state.progress[key];
+    if(done) cumReal+= r.plan;
+    const tr=document.createElement('tr'); tr.className= done?'done':'';
+    tr.innerHTML=`<td>${r.i}</td><td>${r.date}${r.date===today?' <span class="badge">วันนี้</span>':''}</td>
+      <td>${fmt(r.plan)}</td><td>${fmt(r.cum)}</td>
+      <td><input type="checkbox" ${done?'checked':''} data-d="${r.date}"></td>`;
+    tb.appendChild(tr);
+  });
+  // Hook checkboxes
+  tb.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.onchange=()=>{
+    const d=cb.dataset.d;
+    if(cb.checked) state.progress[d]=true; else delete state.progress[d];
+    render(); persistIfLinked();
+  });
+  // KPIs
+  const sumPlan= state.rows.reduce((a,b)=>a+b.plan,0);
+  const sumReal= Object.keys(state.progress).reduce((a,k)=>{
+    const row=state.rows.find(x=>x.date===k); return a + (row?row.plan:0);
+  },0);
+  const left= Math.max(0, state.meta.total - sumReal);
+  const pct= Math.min(100, Math.round((sumReal/state.meta.total)*100)||0);
+  $('#kGoal').textContent='฿'+fmt(state.meta.total);
+  $('#kPlan').textContent='฿'+fmt(sumPlan);
+  $('#kReal').textContent='฿'+fmt(sumReal);
+  $('#kLeft').textContent='฿'+fmt(left);
+  $('#kPct').textContent= pct+'%';
+  $('#bar').style.width= pct+'%';
+  // Week / Month summaries (plan vs real for current period)
+  const now=new Date(todayStr()); const ym= now.toISOString().slice(0,7);
+  const weekStart= addDays(now, -((now.getDay()+6)%7)); // Monday
+  const weekEnd= addDays(weekStart, 6);
+  let wPlan=0,wReal=0,mPlan=0,mReal=0;
+  state.rows.forEach(r=>{
+    const d=new Date(r.date);
+    if(d>=weekStart && d<=weekEnd){ wPlan+=r.plan; if(state.progress[r.date]) wReal+=r.plan; }
+    if(r.date.startsWith(ym)){ mPlan+=r.plan; if(state.progress[r.date]) mReal+=r.plan; }
+  });
+  $('#kWeek').textContent=`฿${fmt(wReal)} / ฿${fmt(wPlan)}`;
+  $('#kMonth').textContent=`฿${fmt(mReal)} / ฿${fmt(mPlan)}`;
+  // Chart
+  drawChart(sumPlan,sumReal);
+}
+
+function drawChart(sumPlan,sumReal){
+  const cvs=$('#chart'), ctx=cvs.getContext('2d'); const W=cvs.width, H=cvs.height;
+  ctx.clearRect(0,0,W,H);
+  // Axes
+  ctx.strokeStyle='#2a3666'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(40,10); ctx.lineTo(40,H-30); ctx.lineTo(W-10,H-30); ctx.stroke();
+  // Series data
+  const xs=state.rows.map((r,i)=> 40 + (W-60)*(i/(state.rows.length-1||1)));
+  const planCum=state.rows.map(r=>r.cum);
+  let realCum=0, real=state.rows.map(r=>{ if(state.progress[r.date]) realCum+=r.plan; return realCum; });
+  const ymax=Math.max(planCum[planCum.length-1]||1, real[real.length-1]||0);
+  const y=(v)=> (H-30) - (v/ymax)*(H-50);
+  // Plan line
+  ctx.strokeStyle='#7aa7ff'; ctx.lineWidth=2; ctx.beginPath();
+  xs.forEach((x,i)=>{ let yy=y(planCum[i]); i?ctx.lineTo(x,yy):ctx.moveTo(x,yy); }); ctx.stroke();
+  // Real line
+  ctx.strokeStyle='#39d98a'; ctx.lineWidth=2; ctx.beginPath();
+  xs.forEach((x,i)=>{ let yy=y(real[i]); i?ctx.lineTo(x,yy):ctx.moveTo(x,yy); }); ctx.stroke();
+  // Legend
+  ctx.fillStyle='#cfe1ff'; ctx.font='12px ui-sans-serif';
+  ctx.fillText('ตามแผน',50,14); ctx.fillStyle='#7aa7ff'; ctx.fillRect(10,6,24,4);
+  ctx.fillStyle='#cfe1ff'; ctx.fillText('ทำจริง',140,14); ctx.fillStyle='#39d98a'; ctx.fillRect(100,6,24,4);
+}
+
+// ===== Persist / Plans =====
+function savePlanCurrent(){
+  if(!state.rows.length){ alert('ยังไม่มีแผน กด “คำนวณแผนออม” ก่อน'); return; }
+  const id= 'p_'+(state.meta.id || Math.random().toString(36).slice(2,9));
+  state.meta.id=id;
+  const plans=loadPlans().filter(p=>p.id!==id);
+  plans.unshift({id, rows:state.rows, meta:state.meta, progress:state.progress});
+  savePlans(plans);
+  alert('บันทึกแล้ว');
+}
+function loadSelected(){
+  const id=$('#plans').value; if(!id) return;
+  const p=loadPlans().find(x=>x.id===id); if(p) applyPlan(p);
+}
+function delSelected(){
+  const id=$('#plans').value; if(!id) return;
+  const plans=loadPlans().filter(x=>x.id!==id); savePlans(plans); alert('ลบแล้ว');
+}
+function applyPlan(p){
+  state={rows:p.rows, meta:p.meta, progress:p.progress||{}};
+  // push meta to inputs
+  $('#goalName').value=p.meta.name||'';
+  $('#goalTotal').value=p.meta.total||'';
+  $('#startDate').value=p.meta.start||todayStr();
+  $('#days').value=p.meta.days||30;
+  $('#mode').value=p.meta.mode||'flat';
+  $('#speed').value=p.meta.speed||1; $('#speedVal').textContent=(+$('#speed').value).toFixed(2)+'x';
+  $('#skipSat').checked=!!p.meta.skipSat; $('#skipSun').checked=!!p.meta.skipSun;
+  $('#rounding').value=p.meta.rounding||'1';
+  render();
+}
+function persistIfLinked(){
+  if(!state.meta.id) return;
+  const plans=loadPlans();
+  const i=plans.findIndex(x=>x.id===state.meta.id);
+  if(i>-1){ plans[i]={id:state.meta.id, rows:state.rows, meta:state.meta, progress:state.progress}; savePlans(plans); }
+}
+
+// ===== Export / Import =====
+function exportCSV(){
+  if(!state.rows.length) return;
+  let header='No,Date,Planned,Bucket Cumulative,Done,Real Cumulative\n';
+  let real=0, lines=state.rows.map(r=>{
+    if(state.progress[r.date]) real+=r.plan;
+    return [r.i,r.date,r.plan,r.cum, state.progress[r.date]?1:0, real].join(',');
+  });
+  download(`galaxy-saver_${state.meta.name||'plan'}.csv`, header+lines.join('\n'), 'text/csv');
+}
+function exportJSON(){
+  if(!state.rows.length) return;
+  const payload= JSON.stringify(state,null,2);
+  download(`galaxy-saver_${state.meta.name||'plan'}.json`, payload, 'application/json');
+}
+function importJSON(e){
+  const f=e.target.files[0]; if(!f) return;
+  const fr=new FileReader(); fr.onload=()=>{
+    try{ const p=JSON.parse(fr.result); applyPlan(p); }catch(err){ alert('ไฟล์ไม่ถูกต้อง'); }
+  }; fr.readAsText(f);
+}
+
+// ===== Jump to Today =====
+function jumpToday(){
+  const t=todayStr(); const row=[...$('#tbl tbody').rows].find(r=> r.cells[1]?.textContent?.includes(t));
+  if(row){ row.scrollIntoView({behavior:'smooth', block:'center'}); row.style.outline='2px solid var(--warn)'; setTimeout(()=>row.style.outline='',1200); }
+}
+</script>
+</body>
+</html>
